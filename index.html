@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mis hábitos</title>
+<script>
+/* Aplica el tema guardado antes del primer pintado para evitar el parpadeo. */
+(function () {
+  var t = null;
+  try { t = localStorage.getItem('habitos.tema'); } catch (e) {}
+  if (t !== 'dark' && t !== 'light') {
+    t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<style>
+/* ==========================================================================
+   TOKENS DE DISEÑO (claro / oscuro)
+   ========================================================================== */
+:root {
+  --bg: #f5f4ef;
+  --surface: #ffffff;
+  --surface-2: #efede6;
+  --line: #e2dfd5;
+  --text: #1e2420;
+  --muted: #69716b;
+  --accent: #2b6f5c;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcece6;
+  --now: #e5484d;
+  --shadow: 0 1px 2px rgba(20, 30, 25, .06), 0 6px 18px rgba(20, 30, 25, .07);
+  --r0-bg: #fbe2e0; --r0-fg: #a3282a;
+  --r1-bg: #fdead0; --r1-fg: #94560a;
+  --r2-bg: #f4eebf; --r2-fg: #766804;
+  --r3-bg: #d6efe0; --r3-fg: #1d6a42;
+  --radius: 14px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #111513;
+  --surface: #1a201d;
+  --surface-2: #232a26;
+  --line: #2d3631;
+  --text: #e6ebe7;
+  --muted: #98a39c;
+  --accent: #5cc3a1;
+  --accent-ink: #0c1411;
+  --accent-soft: #1f3a31;
+  --now: #ff6b6f;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .35);
+  --r0-bg: #3d1f1f; --r0-fg: #ff9d9a;
+  --r1-bg: #3d2d17; --r1-fg: #f6b86a;
+  --r2-bg: #38341a; --r2-fg: #e3d56b;
+  --r3-bg: #17352a; --r3-fg: #7fdba8;
+  color-scheme: dark;
+}
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.45 var(--font);
+  min-height: 100vh;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- Barra superior ---------- */
+.top {
+  position: sticky; top: 0; z-index: 20;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.top-in {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center;
+  gap: 8px 16px; padding-top: 10px; padding-bottom: 10px;
+}
+.brand { font: 600 22px/1 var(--font-display); letter-spacing: -.01em; }
+.brand span { color: var(--accent); }
+.tabs {
+  justify-self: center; display: inline-flex; gap: 2px; padding: 3px;
+  background: var(--surface-2); border-radius: 999px;
+}
+.tab {
+  border: 0; background: transparent; padding: 7px 18px; border-radius: 999px;
+  color: var(--muted); font-weight: 600;
+}
+.tab[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.tools { display: flex; gap: 6px; position: relative; }
+.icon-btn {
+  display: inline-grid; place-items: center; height: 38px; min-width: 38px; padding: 0 10px; gap: 6px;
+  border: 1px solid var(--line); background: var(--surface); border-radius: 10px;
+}
+.icon-btn:hover { border-color: var(--accent); }
+.icon-btn svg { width: 18px; height: 18px; }
+.icon-btn.with-label { display: inline-flex; align-items: center; }
+[data-theme="dark"] .ico-moon, :root:not([data-theme="dark"]) .ico-sun { display: none; }
+
+.menu {
+  position: absolute; right: 0; top: 46px; min-width: 230px; padding: 6px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow);
+}
+.menu button {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  padding: 9px 12px; border-radius: 8px;
+}
+.menu button:hover { background: var(--surface-2); }
+.menu .danger { color: #d1383d; }
+.menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 4px; }
+
+@media (max-width: 640px) {
+  .top-in { grid-template-columns: 1fr auto; }
+  .tabs { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; display: grid; grid-template-columns: repeat(3, 1fr); }
+  .tab { padding: 8px 4px; }
+  .label-hide-sm { display: none; }
+}
+
+/* ---------- Aviso de almacenamiento ---------- */
+.banner {
+  margin: 14px 0 0; padding: 10px 14px; border-radius: 10px;
+  background: var(--r1-bg); color: var(--r1-fg); border: 1px solid currentColor;
+}
+
+/* ---------- Navegación de fecha ---------- */
+.navbar { display: flex; align-items: center; gap: 8px; margin: 18px 0 12px; flex-wrap: wrap; }
+.navbar h1 {
+  flex: 1; min-width: 180px; margin: 0; font: 600 clamp(20px, 3.4vw, 28px)/1.15 var(--font-display);
+  letter-spacing: -.01em;
+}
+.navbar h1 small { font: 600 12px var(--font); letter-spacing: .04em; text-transform: uppercase;
+  background: var(--accent-soft); color: var(--accent); padding: 3px 8px; border-radius: 999px; margin-left: 8px; vertical-align: middle; }
+.btn {
+  border: 1px solid var(--line); background: var(--surface); padding: 8px 14px; border-radius: 10px; font-weight: 600;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: #d1383d; border-color: color-mix(in srgb, #d1383d 40%, var(--line)); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.step { width: 38px; padding: 8px 0; text-align: center; }
+
+/* ---------- Resumen del día ---------- */
+.summary {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 16px; box-shadow: var(--shadow);
+}
+.sum-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.sum-row strong { font-size: 18px; }
+.sum-row .muted { color: var(--muted); font-size: 13px; }
+.bar { height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; margin-top: 10px; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; transition: width .35s ease; }
+
+/* ==========================================================================
+   COMPONENTES COMUNES: check, tarjetas, etiquetas
+   ========================================================================== */
+.chk {
+  -webkit-appearance: none; appearance: none; flex: none; margin: 0;
+  width: 24px; height: 24px; border: 2px solid var(--c, var(--muted)); border-radius: 50%;
+  display: grid; place-content: center; cursor: pointer; background: transparent; transition: background .15s;
+}
+.chk:checked { background: var(--c, var(--accent)); }
+.chk:checked::after {
+  content: ""; width: 6px; height: 11px; border: solid #fff; border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+.card {
+  --c: var(--muted);
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 12px;
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--c);
+  border-radius: 10px; box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+.card-main {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  border: 0; background: transparent; text-align: left; padding: 2px 0;
+}
+.card-time { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.card-name { font-weight: 600; }
+.card.done .card-name { text-decoration: line-through; color: var(--muted); font-weight: 500; }
+.card.done { opacity: .75; }
+.tag {
+  font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+  color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent);
+}
+.rec { width: 14px; height: 14px; color: var(--muted); flex: none; }
+
+/* ==========================================================================
+   VISTA DÍA
+   ========================================================================== */
+.allday { margin-bottom: 14px; }
+.allday h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.allday .stack { display: grid; gap: 8px; }
+.empty-hint { color: var(--muted); text-align: center; padding: 10px 0 16px; }
+.timeline { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.hour { display: grid; grid-template-columns: 64px 1fr; border-top: 1px solid var(--line); }
+.hour:first-child { border-top: 0; }
+.hlabel {
+  padding: 8px 10px 0 0; text-align: right; color: var(--muted); font-size: 12.5px;
+  font-variant-numeric: tabular-nums; border-right: 1px solid var(--line);
+}
+.hlabel.now { color: var(--now); font-weight: 700; }
+.slot { position: relative; min-height: 56px; padding: 6px 8px; display: grid; gap: 6px; align-content: start; cursor: copy; }
+.slot:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.slot:empty::after, .slot.empty::after {
+  content: "+ Agregar"; position: absolute; left: 12px; top: 18px; color: var(--accent); font-size: 12.5px; font-weight: 600; opacity: 0; transition: opacity .12s;
+}
+.slot:hover.empty::after { opacity: .9; }
+.nowline { position: absolute; left: 0; right: 0; height: 0; border-top: 2px solid var(--now); pointer-events: none; z-index: 2; }
+.nowline::before { content: ""; position: absolute; left: -5px; top: -6px; width: 10px; height: 10px; border-radius: 50%; background: var(--now); }
+
+/* ==========================================================================
+   VISTA SEMANA
+   ========================================================================== */
+.week-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.week { display: grid; grid-template-columns: 54px repeat(7, minmax(112px, 1fr)); min-width: 860px; }
+.week > div { border-top: 1px solid var(--line); border-left: 1px solid var(--line); min-width: 0; }
+.week > .wh { border-top: 0; }
+.week > .corner, .week > .wl { border-left: 0; position: sticky; left: 0; z-index: 3; background: var(--surface); }
+.wl { padding: 6px 8px 0 0; text-align: right; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wl.now { color: var(--now); font-weight: 700; }
+.wh { padding: 8px 6px; text-align: center; background: var(--surface); }
+.wh button { border: 0; background: transparent; width: 100%; padding: 2px; border-radius: 8px; }
+.wh button:hover { background: var(--surface-2); }
+.wh .dn { display: block; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.wh .dd { display: block; font: 600 20px/1.2 var(--font-display); }
+.wh .dc { display: block; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wh.today .dd { color: var(--accent); }
+.wh.today .dn { color: var(--accent); }
+.wc { position: relative; min-height: 46px; padding: 4px; display: grid; gap: 4px; align-content: start; cursor: copy; }
+.wc.today, .wh.today { background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
+.wc:hover { background: var(--surface-2); }
+.chip {
+  --c: var(--muted);
+  display: flex; align-items: center; gap: 6px; padding: 3px 6px 3px 6px;
+  border-left: 3px solid var(--c); border-radius: 6px;
+  background: color-mix(in srgb, var(--c) 12%, var(--surface)); cursor: default; min-width: 0;
+}
+.chip .chk { width: 18px; height: 18px; border-width: 2px; }
+.chip .chk:checked::after { width: 4px; height: 8px; }
+.chip button { flex: 1; min-width: 0; border: 0; background: transparent; text-align: left; padding: 1px 0; font-size: 12.5px; line-height: 1.25; }
+.chip button b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip button span { display: block; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chip.done button b { text-decoration: line-through; color: var(--muted); }
+.chip.done { opacity: .7; }
+.week .allday-l { font-size: 10.5px; line-height: 1.2; padding-top: 8px; }
+
+/* ==========================================================================
+   VISTA MES
+   ========================================================================== */
+.month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.mh { text-align: center; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 4px 0; }
+.mcell {
+  display: flex; flex-direction: column; justify-content: space-between; gap: 4px; text-align: left;
+  min-height: 84px; padding: 8px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--surface); position: relative;
+}
+.mcell:hover { border-color: var(--accent); transform: translateY(-1px); }
+.mcell .md { font: 600 17px/1 var(--font-display); }
+.mcell .mc { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mcell .mb { height: 5px; border-radius: 99px; background: rgba(128,128,128,.22); overflow: hidden; }
+.mcell .mb i { display: block; height: 100%; background: currentColor; }
+.mcell.out { opacity: .45; }
+.mcell.today { outline: 2px solid var(--accent); outline-offset: -1px; }
+.b-r0 { background: var(--r0-bg); color: var(--r0-fg); border-color: transparent; }
+.b-r1 { background: var(--r1-bg); color: var(--r1-fg); border-color: transparent; }
+.b-r2 { background: var(--r2-bg); color: var(--r2-fg); border-color: transparent; }
+.b-r3 { background: var(--r3-bg); color: var(--r3-fg); border-color: transparent; }
+.mcell .md { color: var(--text); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 14px; font-size: 12.5px; color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 4px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--line); }
+@media (max-width: 640px) {
+  .month { gap: 3px; }
+  .mcell { min-height: 62px; padding: 5px; border-radius: 8px; }
+  .mcell .md { font-size: 14px; }
+  .mcell .mc { font-size: 11px; }
+  .mcell .mb { display: none; }
+  .hour { grid-template-columns: 48px 1fr; }
+}
+
+/* ==========================================================================
+   BOTÓN FLOTANTE, DIÁLOGOS, TOAST
+   ========================================================================== */
+.fab {
+  position: fixed; right: max(18px, env(safe-area-inset-right)); bottom: max(18px, env(safe-area-inset-bottom)); z-index: 30;
+  width: 58px; height: 58px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .28); display: grid; place-items: center;
+}
+.fab:hover { filter: brightness(1.08); }
+.fab svg { width: 26px; height: 26px; }
+main { padding-bottom: 96px; }
+
+dialog {
+  border: 0; padding: 0; border-radius: 18px; background: var(--surface); color: var(--text);
+  width: min(480px, calc(100vw - 24px)); max-height: 92vh; box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+}
+dialog::backdrop { background: rgba(8, 12, 10, .55); }
+.dlg-body { padding: 20px 20px 8px; display: grid; gap: 14px; }
+.dlg-body h2 { margin: 0; font: 600 22px var(--font-display); }
+.dlg-body p { margin: 0; color: var(--muted); }
+.dlg-foot { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; padding: 12px 20px 20px; }
+.dlg-foot .spacer { flex: 1; }
+.field { display: grid; gap: 6px; }
+.field > label, .field > .lbl { font-size: 12.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.input {
+  width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--text);
+}
+.input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+.linkbtn { border: 0; background: transparent; color: var(--accent); font-weight: 600; padding: 10px 4px; }
+.seg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.seg span {
+  display: block; text-align: center; padding: 9px 8px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--bg); font-weight: 600; font-size: 14px;
+}
+.seg input:checked + span { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.days { display: flex; gap: 6px; }
+.days label { position: relative; flex: 1; }
+.days input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.days span { display: block; text-align: center; padding: 9px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-weight: 700; }
+.days input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.days input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatches label { position: relative; }
+.swatches input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.swatches span {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px 6px 8px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--bg); font-size: 13px; font-weight: 600;
+}
+.swatches span::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--c); }
+.swatches input:checked + span { border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, var(--bg)); }
+.swatches input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.err { color: #d1383d; font-size: 13.5px; font-weight: 600; margin: 0; }
+
+#toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 60;
+  background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-weight: 600; font-size: 14px;
+  transition: opacity .2s, transform .2s; max-width: calc(100vw - 32px);
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-in">
+    <div class="brand">Mis <span>hábitos</span></div>
+    <nav class="tabs" role="tablist" aria-label="Vistas">
+      <button class="tab" role="tab" data-action="tab" data-view="day">Día</button>
+      <button class="tab" role="tab" data-action="tab" data-view="week">Semana</button>
+      <button class="tab" role="tab" data-action="tab" data-view="month">Mes</button>
+    </nav>
+    <div class="tools">
+      <button class="icon-btn with-label" data-action="menu" aria-haspopup="true" aria-expanded="false" title="Datos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+        <span class="label-hide-sm">Datos</span>
+      </button>
+      <button class="icon-btn" data-action="theme" aria-label="Cambiar entre modo claro y oscuro" title="Modo claro / oscuro">
+        <svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <div class="menu" id="menu" hidden role="menu">
+        <button role="menuitem" data-action="export">Exportar datos (JSON)</button>
+        <button role="menuitem" data-action="import">Importar datos…</button>
+        <hr>
+        <button role="menuitem" data-action="clear-sample" id="mi-sample">Borrar datos de ejemplo</button>
+        <button role="menuitem" class="danger" data-action="clear-all">Borrar todos los datos</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="banner" id="banner" hidden></div>
+  <div class="navbar" id="navbar"></div>
+  <section class="summary" id="summary" aria-live="polite"></section>
+  <section id="view"></section>
+</main>
+
+<button class="fab" data-action="new" aria-label="Agregar hábito o quehacer" title="Agregar">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<!-- Diálogo: crear / editar ítem -->
+<dialog id="dlg-item">
+  <form id="form-item" novalidate>
+    <div class="dlg-body">
+      <h2 id="item-title">Nuevo</h2>
+
+      <div class="field">
+        <label for="f-name">Nombre</label>
+        <input class="input" id="f-name" maxlength="80" autocomplete="off" placeholder="Ej.: Hacer ejercicio">
+      </div>
+
+      <div class="row2">
+        <div class="field"><label for="f-time">Desde</label><input class="input" type="time" id="f-time"></div>
+        <div class="field"><label for="f-end">Hasta</label><input class="input" type="time" id="f-end"></div>
+        <button type="button" class="linkbtn" id="f-notime">Sin hora</button>
+      </div>
+
+      <div class="field">
+        <span class="lbl">Frecuencia</span>
+        <div class="seg" id="f-freq">
+          <label><input type="radio" name="freq" value="once"><span>Una sola vez</span></label>
+          <label><input type="radio" name="freq" value="daily"><span>Todos los días</span></label>
+          <label><input type="radio" name="freq" value="weekly"><span>Días de la semana</span></label>
+          <label><input type="radio" name="freq" value="monthly"><span>Día del mes</span></label>
+        </div>
+      </div>
+
+      <div class="field" id="box-days" hidden>
+        <span class="lbl">Días</span>
+        <div class="days" id="f-days"></div>
+      </div>
+
+      <div class="field" id="box-dom" hidden>
+        <label for="f-dom">Día del mes</label>
+        <input class="input" type="number" id="f-dom" min="1" max="31" inputmode="numeric">
+        <small style="color:var(--muted)">Si un mes no tiene ese día, aparece el último día del mes.</small>
+      </div>
+
+      <div class="field" id="box-date">
+        <label for="f-date" id="f-date-lbl">Fecha</label>
+        <input class="input" type="date" id="f-date">
+      </div>
+
+      <div class="field">
+        <span class="lbl">Categoría (opcional)</span>
+        <div class="swatches" id="f-cats"></div>
+      </div>
+
+      <p class="err" id="f-err" role="alert" hidden></p>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" class="btn danger" id="f-delete" hidden>Eliminar</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="f-cancel">Cancelar</button>
+      <button type="submit" class="btn primary">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Diálogo genérico de pregunta / confirmación -->
+<dialog id="dlg-ask">
+  <div class="dlg-body">
+    <h2 id="ask-title"></h2>
+    <p id="ask-text"></p>
+  </div>
+  <div class="dlg-foot" id="ask-buttons"></div>
+</dialog>
+
+<div id="toast" role="status"></div>
+<input type="file" id="file-import" accept=".json,application/json" hidden>
+
+<noscript><p style="padding:24px">Esta página necesita JavaScript activado para funcionar.</p></noscript>
+
+<script>
+'use strict';
+
+/* ==========================================================================
+   1. UTILIDADES DE FECHA
+   Las fechas se manejan como texto "AAAA-MM-DD" en hora LOCAL.
+   Nunca se usa toISOString() para fechas de calendario (evita desfases UTC).
+   ========================================================================== */
+const MONTHS   = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const MONTHS_S = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const WEEKDAYS = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
+const DAY_LETTERS = ['L','M','X','J','V','S','D'];
+
+const pad = n => String(n).padStart(2, '0');
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const fmtKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseKey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const isKey = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && fmtKey(parseKey(s)) === s;
+const todayKey = () => fmtKey(new Date());
+const addDays = (k, n) => { const d = parseKey(k); d.setDate(d.getDate() + n); return fmtKey(d); };
+const daysInMonth = (y, m0) => new Date(y, m0 + 1, 0).getDate();
+/** Día de la semana con lunes = 0 … domingo = 6. */
+const dow = k => (parseKey(k).getDay() + 6) % 7;
+const startOfWeek = k => addDays(k, -dow(k));
+const addMonths = (k, n) => {
+  const d = parseKey(k), day = d.getDate();
+  d.setDate(1); d.setMonth(d.getMonth() + n);
+  d.setDate(Math.min(day, daysInMonth(d.getFullYear(), d.getMonth())));
+  return fmtKey(d);
+};
+const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const isTime = s => typeof s === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
+const nowMinutes = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
+
+const fmtLong = k => { const d = parseKey(k);
+  return cap(`${WEEKDAYS[dow(k)]} ${d.getDate()} de ${MONTHS[d.getMonth()]} de ${d.getFullYear()}`); };
+const fmtWeek = k => {
+  const a = parseKey(startOfWeek(k)), b = parseKey(addDays(startOfWeek(k), 6));
+  if (a.getMonth() === b.getMonth()) return `${a.getDate()} – ${b.getDate()} de ${MONTHS[b.getMonth()]} de ${b.getFullYear()}`;
+  if (a.getFullYear() === b.getFullYear()) return `${a.getDate()} ${MONTHS_S[a.getMonth()]} – ${b.getDate()} ${MONTHS_S[b.getMonth()]} ${b.getFullYear()}`;
+  return `${a.getDate()} ${MONTHS_S[a.getMonth()]} ${a.getFullYear()} – ${b.getDate()} ${MONTHS_S[b.getMonth()]} ${b.getFullYear()}`;
+};
+const fmtMonth = k => { const d = parseKey(k); return `${cap(MONTHS[d.getMonth()])} de ${d.getFullYear()}`; };
+const rangeLabel = (t, e) => t ? (e ? `${t}–${e}` : t) : '';
+
+
+/* ==========================================================================
+   2. DATOS Y ALMACENAMIENTO
+   Modelo:
+   data = {
+     version, seeded,
+     items: [{ id, name, time:'HH:MM'|'', end:'HH:MM'|'', cat,
+               freq:'once'|'daily'|'weekly'|'monthly',
+               days:[0..6], dom:1..31,
+               start:'AAAA-MM-DD', until:'AAAA-MM-DD'|null,   // vigencia de la serie
+               skips:['AAAA-MM-DD'],                          // días eliminados ("solo este día")
+               over:{'AAAA-MM-DD':{name,time,end,cat}},       // días editados ("solo este día")
+               sample?:true }],
+     done: { 'idÍtem@AAAA-MM-DD': true }                      // checks por fecha
+   }
+   ========================================================================== */
+const STORE_KEY = 'habitos.datos.v1';
+const THEME_KEY = 'habitos.tema';
+
+const CATS = [
+  { k: 'salud',    n: 'Salud',    c: '#2fa36b' },
+  { k: 'trabajo',  n: 'Trabajo',  c: '#3b6fd8' },
+  { k: 'estudio',  n: 'Estudio',  c: '#8b5cf6' },
+  { k: 'hogar',    n: 'Hogar',    c: '#d98a1f' },
+  { k: 'personal', n: 'Personal', c: '#e0527a' },
+  { k: 'finanzas', n: 'Finanzas', c: '#0e9aa7' },
+  { k: 'social',   n: 'Social',   c: '#e0693b' },
+  { k: '',         n: 'Sin categoría', c: '#7b8794' },
+];
+const catOf = k => CATS.find(c => c.k === k) || CATS[CATS.length - 1];
+
+/** Acceso seguro a localStorage: nunca lanza, y recuerda si falló. */
+const storage = {
+  ok: true,
+  get(k) { try { return localStorage.getItem(k); } catch (e) { this.ok = false; return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { this.ok = false; return false; } },
+  probe() { try { localStorage.setItem('habitos.probe', '1'); localStorage.removeItem('habitos.probe'); } catch (e) { this.ok = false; } },
+};
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const cleanId = s => String(s).replace(/[^A-Za-z0-9_-]/g, '');
+
+let data = { version: 1, seeded: false, items: [], done: {} };
+
+/** Valida y limpia un ítem (sirve tanto para lo guardado como para lo importado). */
+function normalizeItem(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const name = String(raw.name || '').trim().slice(0, 80);
+  if (!name || !isKey(raw.start)) return null;
+  const freq = ['once', 'daily', 'weekly', 'monthly'].includes(raw.freq) ? raw.freq : 'once';
+  const time = isTime(raw.time) ? raw.time : '';
+  const end = time && isTime(raw.end) && toMin(raw.end) > toMin(time) ? raw.end : '';
+  const over = {};
+  if (raw.over && typeof raw.over === 'object') {
+    for (const [k, o] of Object.entries(raw.over)) {
+      if (!isKey(k) || !o || typeof o !== 'object') continue;
+      const oName = String(o.name || '').trim().slice(0, 80);
+      if (!oName) continue;
+      const oTime = isTime(o.time) ? o.time : '';
+      over[k] = { name: oName, time: oTime, end: oTime && isTime(o.end) && toMin(o.end) > toMin(oTime) ? o.end : '',
+                  cat: CATS.some(c => c.k === o.cat) ? o.cat : '' };
+    }
+  }
+  const item = {
+    id: cleanId(raw.id) || uid(),
+    name, time, end, freq,
+    days: Array.isArray(raw.days) ? [...new Set(raw.days.map(Number).filter(n => n >= 0 && n <= 6))].sort() : [],
+    dom: Math.min(31, Math.max(1, parseInt(raw.dom, 10) || parseKey(raw.start).getDate())),
+    cat: CATS.some(c => c.k === raw.cat) ? raw.cat : '',
+    start: raw.start,
+    until: isKey(raw.until) ? raw.until : null,
+    skips: Array.isArray(raw.skips) ? raw.skips.filter(isKey) : [],
+    over,
+  };
+  if (raw.sample) item.sample = true;
+  return item;
+}
+
+/** Valida un objeto de datos completo; devuelve null si no es utilizable. */
+function normalizeData(raw) {
+  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.items)) return null;
+  const items = [], ids = new Set();
+  for (const r of raw.items) {
+    const it = normalizeItem(r);
+    if (!it) continue;
+    while (ids.has(it.id)) it.id = uid();
+    ids.add(it.id); items.push(it);
+  }
+  const done = {};
+  if (raw.done && typeof raw.done === 'object') {
+    for (const [key, v] of Object.entries(raw.done)) {
+      const at = key.lastIndexOf('@');
+      if (v && at > 0 && ids.has(key.slice(0, at)) && isKey(key.slice(at + 1))) done[key] = true;
+    }
+  }
+  return { version: 1, seeded: true, items, done };
+}
+
+function loadData() {
+  storage.probe();
+  const txt = storage.get(STORE_KEY);
+  if (txt === null) return false;                 // primera vez (o sin almacenamiento)
+  try {
+    const parsed = normalizeData(JSON.parse(txt));
+    if (!parsed) throw new Error('formato');
+    data = parsed;
+    return true;
+  } catch (e) {
+    storage.set(STORE_KEY + '.corrupto', txt);    // conserva copia por si se puede rescatar
+    toast('Los datos guardados estaban dañados; se conservó una copia aparte.');
+    return false;
+  }
+}
+
+function save() {
+  const ok = storage.ok && storage.set(STORE_KEY, JSON.stringify(data));
+  if (!ok) showStorageBanner();
+}
+
+function showStorageBanner() {
+  const b = document.getElementById('banner');
+  b.textContent = 'No se pudo usar el almacenamiento del navegador: tus cambios se perderán al cerrar la página. Usa «Datos → Exportar datos» para guardar un respaldo.';
+  b.hidden = false;
+}
+
+/** Datos de ejemplo para la primera vez que se abre la página. */
+function seedData() {
+  const t = todayKey();
+  const mk = (name, time, end, freq, cat, extra = {}) => ({
+    id: uid(), name, time, end, freq, days: [], dom: 1, cat,
+    start: addDays(t, -21), until: null, skips: [], over: {}, sample: true, ...extra,
+  });
+  data = {
+    version: 1, seeded: true, done: {},
+    items: [
+      mk('Despertar y estirar', '06:00', '06:20', 'daily', 'salud'),
+      mk('Ejercicio', '07:00', '08:00', 'weekly', 'salud', { days: [0, 2, 4] }),
+      mk('Trabajo profundo', '09:00', '12:00', 'weekly', 'trabajo', { days: [0, 1, 2, 3, 4] }),
+      mk('Revisar correo', '14:00', '14:30', 'weekly', 'trabajo', { days: [0, 1, 2, 3, 4] }),
+      mk('Estudiar inglés', '19:00', '19:45', 'weekly', 'estudio', { days: [1, 3] }),
+      mk('Leer 20 minutos', '22:00', '', 'daily', 'personal'),
+      mk('Pagar el alquiler', '', '', 'monthly', 'finanzas', { dom: 5 }),
+      mk('Regar las plantas', '', '', 'weekly', 'hogar', { days: [5] }),
+      mk('Llamar a la familia', '', '', 'weekly', 'social', { days: [6] }),
+      mk('Cita con el dentista', '16:30', '17:30', 'once', 'salud', { start: addDays(t, 2) }),
+    ],
+  };
+  // Historial ficticio de los últimos días, para que el mes tenga colores.
+  const hash = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) % 100; };
+  for (let i = 21; i >= 1; i--) {
+    const k = addDays(t, -i);
+    occurrencesOn(k).forEach(o => { if (hash(o.id + k) < 72) data.done[o.id + '@' + k] = true; });
+  }
+}
+
+
+/* ==========================================================================
+   3. LÓGICA (sin tocar el DOM)
+   ========================================================================== */
+const findItem = id => data.items.find(i => i.id === id);
+
+/** ¿La serie genera una aparición en la fecha k? */
+function occursOn(it, k) {
+  if (k < it.start || (it.until && k > it.until) || it.skips.includes(k)) return false;
+  switch (it.freq) {
+    case 'once':   return k === it.start;
+    case 'daily':  return true;
+    case 'weekly': return it.days.includes(dow(k));
+    case 'monthly': {
+      const d = parseKey(k);
+      return d.getDate() === Math.min(it.dom, daysInMonth(d.getFullYear(), d.getMonth()));
+    }
+  }
+  return false;
+}
+
+/** Apariciones de un día, ya con las ediciones puntuales aplicadas y ordenadas por hora. */
+function occurrencesOn(k) {
+  const out = [];
+  for (const it of data.items) {
+    if (!occursOn(it, k)) continue;
+    const e = it.over[k] ? { ...it, ...it.over[k] } : it;
+    out.push({ id: it.id, date: k, name: e.name, time: e.time, end: e.end, cat: e.cat,
+               recurring: it.freq !== 'once', done: !!data.done[it.id + '@' + k] });
+  }
+  return out.sort((a, b) => (a.time || '').localeCompare(b.time || '') || a.name.localeCompare(b.name, 'es'));
+}
+
+function dayStats(k) {
+  const occ = occurrencesOn(k);
+  return { total: occ.length, done: occ.filter(o => o.done).length };
+}
+
+function toggleDone(id, k) {
+  const key = id + '@' + k;
+  if (data.done[key]) delete data.done[key]; else data.done[key] = true;
+  save();
+}
+
+/** Elimina checks de una serie que cumplan el criterio sobre la fecha. */
+function dropDone(id, pred) {
+  for (const key of Object.keys(data.done)) {
+    const at = key.lastIndexOf('@');
+    if (key.slice(0, at) === id && pred(key.slice(at + 1))) delete data.done[key];
+  }
+}
+
+/** ¿Existe alguna aparición de la serie entre dos fechas (inclusive)? */
+function hasOccurrenceBetween(it, from, to) {
+  for (let k = from, n = 0; k <= to && n < 4000; k = addDays(k, 1), n++) if (occursOn(it, k)) return true;
+  return false;
+}
+
+/** Campos "de serie" que vienen del formulario. */
+const seriesFields = f => ({ name: f.name, time: f.time, end: f.end, cat: f.cat,
+  freq: f.freq, days: f.freq === 'weekly' ? f.days : [], dom: f.freq === 'monthly' ? f.dom : parseKey(f.start).getDate() });
+
+function createItem(f) {
+  data.items.push({ id: uid(), ...seriesFields(f), start: f.start, until: null, skips: [], over: {} });
+}
+
+/**
+ * Aplica una edición.
+ * scope: 'whole'  → ítem de una sola vez (se modifica tal cual)
+ *        'one'    → solo la aparición del día `date` (excepción)
+ *        'future' → ese día y todos los siguientes (se corta la serie en `date`)
+ */
+function applyEdit(id, date, f, scope) {
+  const it = findItem(id);
+  delete it.sample;                                   // al editar, deja de ser "de ejemplo"
+
+  if (scope === 'whole') {
+    if (f.start !== it.start) {                       // si movió la fecha, mueve también su check
+      const wasDone = data.done[id + '@' + it.start];
+      delete data.done[id + '@' + it.start];
+      if (wasDone) data.done[id + '@' + f.start] = true;
+    }
+    Object.assign(it, seriesFields(f), { start: f.start, until: null, skips: [], over: {} });
+    return;
+  }
+  if (scope === 'one') {
+    it.over[date] = { name: f.name, time: f.time, end: f.end, cat: f.cat };
+    return;
+  }
+  // scope === 'future'
+  const cutsSomething = hasOccurrenceBetween(it, it.start, addDays(date, -1));
+  const dropFrom = k => k >= date;
+  if (!cutsSomething) {                               // no hay pasado: se reescribe la serie en su lugar
+    Object.assign(it, seriesFields({ ...f, start: date }), { start: date });
+    it.skips = it.skips.filter(k => !dropFrom(k));
+    for (const k of Object.keys(it.over)) if (dropFrom(k)) delete it.over[k];
+    return;
+  }
+  const next = { id: uid(), ...seriesFields({ ...f, start: date }), start: date, until: it.until,
+                 skips: it.skips.filter(dropFrom), over: {} };
+  data.items.push(next);
+  it.until = addDays(date, -1);
+  it.skips = it.skips.filter(k => !dropFrom(k));
+  for (const k of Object.keys(it.over)) if (dropFrom(k)) delete it.over[k];
+  // Los checks de los días futuros pasan a la nueva serie.
+  for (const key of Object.keys(data.done)) {
+    const at = key.lastIndexOf('@');
+    if (key.slice(0, at) === id && dropFrom(key.slice(at + 1))) {
+      delete data.done[key];
+      data.done[next.id + key.slice(at)] = true;
+    }
+  }
+}
+
+/** Elimina: 'whole' (todo el ítem), 'one' (solo ese día) o 'future' (ese día y los siguientes). */
+function applyDelete(id, date, scope) {
+  const it = findItem(id);
+  if (scope === 'one') {
+    it.skips.push(date);
+    delete it.over[date];
+    delete data.done[id + '@' + date];
+    return;
+  }
+  if (scope === 'future' && hasOccurrenceBetween(it, it.start, addDays(date, -1))) {
+    it.until = addDays(date, -1);
+    it.skips = it.skips.filter(k => k < date);
+    for (const k of Object.keys(it.over)) if (k >= date) delete it.over[k];
+    dropDone(id, k => k >= date);
+    return;
+  }
+  data.items = data.items.filter(i => i.id !== id);   // todo el ítem
+  dropDone(id, () => true);
+}
+
+
+/* ==========================================================================
+   4. RENDERIZADO
+   ========================================================================== */
+const H0 = 5, H1 = 24;                                // línea de tiempo: 5:00 a 24:00
+const ui = { view: 'day', cursor: todayKey() };
+const $ = sel => document.querySelector(sel);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
+const hourOf = t => clamp(Math.floor(toMin(t) / 60), H0, H1 - 1);
+
+const ICON_REC = '<svg class="rec" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Se repite"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>';
+
+function checkbox(o) {
+  return `<input type="checkbox" class="chk" data-action="toggle" data-id="${o.id}" data-date="${o.date}" ${o.done ? 'checked' : ''} aria-label="${esc(o.name)}">`;
+}
+
+/** Tarjeta grande (vista Día). */
+function cardHtml(o) {
+  const cat = catOf(o.cat);
+  return `<div class="card ${o.done ? 'done' : ''}" style="--c:${cat.c}">
+    ${checkbox(o)}
+    <button type="button" class="card-main" data-action="edit" data-id="${o.id}" data-date="${o.date}">
+      ${o.time ? `<span class="card-time">${rangeLabel(o.time, o.end)}</span>` : ''}
+      <span class="card-name">${esc(o.name)}</span>
+      ${o.cat ? `<span class="tag">${esc(cat.n)}</span>` : ''}
+      ${o.recurring ? ICON_REC : ''}
+    </button>
+  </div>`;
+}
+
+/** Chip compacto (vista Semana). */
+function chipHtml(o) {
+  const cat = catOf(o.cat);
+  return `<div class="chip ${o.done ? 'done' : ''}" style="--c:${cat.c}" title="${esc(o.name)}">
+    ${checkbox(o)}
+    <button type="button" data-action="edit" data-id="${o.id}" data-date="${o.date}">
+      <b>${esc(o.name)}</b>${o.time ? `<span>${rangeLabel(o.time, o.end)}</span>` : ''}
+    </button>
+  </div>`;
+}
+
+/** Posición de la línea "ahora" dentro de una celda de hora, o '' si no corresponde. */
+function nowLineHtml(hour) {
+  const m = nowMinutes(), h = Math.floor(m / 60);
+  const row = clamp(h, H0, H1 - 1);
+  if (row !== hour) return '';
+  const pct = h < H0 ? 0 : (m % 60) / 60 * 100;
+  return `<div class="nowline" style="top:${pct.toFixed(1)}%"></div>`;
+}
+
+function renderNav() {
+  const t = todayKey();
+  let title, isNow = false;
+  if (ui.view === 'day') { title = fmtLong(ui.cursor); isNow = ui.cursor === t; }
+  else if (ui.view === 'week') { title = fmtWeek(ui.cursor); isNow = startOfWeek(ui.cursor) === startOfWeek(t); }
+  else { title = fmtMonth(ui.cursor); isNow = ui.cursor.slice(0, 7) === t.slice(0, 7); }
+  const unit = { day: 'día', week: 'semana', month: 'mes' }[ui.view];
+  $('#navbar').innerHTML = `
+    <button class="btn step" data-action="prev" aria-label="Anterior ${unit}">‹</button>
+    <button class="btn step" data-action="next" aria-label="Siguiente ${unit}">›</button>
+    <h1>${esc(title)}${isNow ? '<small>' + (ui.view === 'day' ? 'Hoy' : 'Actual') + '</small>' : ''}</h1>
+    <button class="btn" data-action="today">Hoy</button>`;
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === ui.view)));
+}
+
+/** Resumen "X de Y completados" del día mostrado (o de hoy si la vista no es Día). */
+function renderSummary() {
+  const k = ui.view === 'day' ? ui.cursor : todayKey();
+  const { total, done } = dayStats(k);
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const label = k === todayKey() ? 'Hoy' : fmtLong(k);
+  $('#summary').innerHTML = total
+    ? `<div class="sum-row"><span><strong class="num">${done} de ${total}</strong> completados</span><span class="muted">${esc(label)} · ${pct}%</span></div>
+       <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>`
+    : `<div class="sum-row"><span><strong>Sin ítems</strong> para ${k === todayKey() ? 'hoy' : 'este día'}</span><span class="muted">${esc(label)}</span></div>
+       <div class="bar"><i style="width:0"></i></div>`;
+}
+
+function renderDay() {
+  const k = ui.cursor, occ = occurrencesOn(k);
+  const untimed = occ.filter(o => !o.time), byHour = {};
+  occ.filter(o => o.time).forEach(o => (byHour[hourOf(o.time)] = byHour[hourOf(o.time)] || []).push(o));
+  const isToday = k === todayKey();
+  const nowH = clamp(Math.floor(nowMinutes() / 60), H0, H1 - 1);
+
+  let html = '';
+  if (untimed.length) {
+    html += `<div class="allday"><h3>Sin hora</h3><div class="stack">${untimed.map(cardHtml).join('')}</div></div>`;
+  }
+  if (!occ.length) html += '<p class="empty-hint">No hay nada para este día. Haz clic en una hora para agregar algo.</p>';
+  html += '<div class="timeline">';
+  for (let h = H0; h < H1; h++) {
+    const list = byHour[h] || [];
+    html += `<div class="hour">
+      <div class="hlabel ${isToday && h === nowH ? 'now' : ''}">${pad(h)}:00</div>
+      <div class="slot ${list.length ? '' : 'empty'}" data-action="add-at" data-date="${k}" data-time="${pad(h)}:00">
+        ${list.map(cardHtml).join('')}${isToday ? nowLineHtml(h) : ''}
+      </div></div>`;
+  }
+  html += `<div class="hour"><div class="hlabel">24:00</div><div style="height:14px"></div></div></div>`;
+  $('#view').innerHTML = html;
+}
+
+function renderWeek() {
+  const first = startOfWeek(ui.cursor), t = todayKey();
+  const keys = Array.from({ length: 7 }, (_, i) => addDays(first, i));
+  const occ = keys.map(occurrencesOn);
+  const hasUntimed = occ.some(l => l.some(o => !o.time));
+  const nowH = clamp(Math.floor(nowMinutes() / 60), H0, H1 - 1);
+
+  let html = '<div class="week-scroll"><div class="week"><div class="corner wh"></div>';
+  keys.forEach((k, i) => {
+    const s = dayStats(k), d = parseKey(k);
+    html += `<div class="wh ${k === t ? 'today' : ''}"><button type="button" data-action="goto-day" data-date="${k}">
+      <span class="dn">${DAY_LETTERS[i]} · ${WEEKDAYS[i].slice(0, 3)}</span><span class="dd">${d.getDate()}</span>
+      <span class="dc">${s.total ? `${s.done}/${s.total}` : '—'}</span></button></div>`;
+  });
+  if (hasUntimed) {
+    html += '<div class="wl allday-l">Sin hora</div>';
+    keys.forEach((k, i) => {
+      html += `<div class="wc ${k === t ? 'today' : ''}" data-action="add-at" data-date="${k}" data-time="">${occ[i].filter(o => !o.time).map(chipHtml).join('')}</div>`;
+    });
+  }
+  for (let h = H0; h < H1; h++) {
+    html += `<div class="wl ${h === nowH && keys.includes(t) ? 'now' : ''}">${pad(h)}:00</div>`;
+    keys.forEach((k, i) => {
+      const cell = occ[i].filter(o => o.time && hourOf(o.time) === h);
+      html += `<div class="wc ${k === t ? 'today' : ''}" data-action="add-at" data-date="${k}" data-time="${pad(h)}:00">${cell.map(chipHtml).join('')}${k === t ? nowLineHtml(h) : ''}</div>`;
+    });
+  }
+  html += '</div></div>';
+  $('#view').innerHTML = html;
+}
+
+/** Categoría de color según % de cumplimiento (los días futuros y el "hoy" sin avance son neutros). */
+function bucket(k, total, done) {
+  const t = todayKey();
+  if (!total || k > t || (k === t && done === 0)) return '';
+  const p = done / total;
+  return p === 0 ? 'b-r0' : p < 0.5 ? 'b-r1' : p < 1 ? 'b-r2' : 'b-r3';
+}
+
+function renderMonth() {
+  const d = parseKey(ui.cursor), y = d.getFullYear(), m = d.getMonth(), t = todayKey();
+  const firstOfMonth = fmtKey(new Date(y, m, 1));
+  const gridStart = startOfWeek(firstOfMonth);
+  const weeks = Math.ceil((dow(firstOfMonth) + daysInMonth(y, m)) / 7);
+  let html = '<div class="month">' + DAY_LETTERS.map((l, i) => `<div class="mh" title="${cap(WEEKDAYS[i])}">${l}</div>`).join('');
+  for (let i = 0; i < weeks * 7; i++) {
+    const k = addDays(gridStart, i), cur = parseKey(k);
+    const { total, done } = dayStats(k);
+    html += `<button type="button" class="mcell ${bucket(k, total, done)} ${cur.getMonth() !== m ? 'out' : ''} ${k === t ? 'today' : ''}"
+        data-action="goto-day" data-date="${k}" aria-label="${esc(fmtLong(k))}: ${done} de ${total} completados">
+      <span class="md">${cur.getDate()}</span>
+      ${total ? `<span class="mc">${done}/${total}</span><span class="mb"><i style="width:${Math.round(done / total * 100)}%"></i></span>` : '<span></span>'}
+    </button>`;
+  }
+  html += '</div><div class="legend"><span><i class="b-r0"></i>0 %</span><span><i class="b-r1"></i>menos de 50 %</span><span><i class="b-r2"></i>50 % a 99 %</span><span><i class="b-r3"></i>100 %</span><span><i></i>pendiente / sin ítems</span></div>';
+  $('#view').innerHTML = html;
+}
+
+/** Redibuja todo. `scroll: true` centra la línea de tiempo en la hora actual (o en el primer ítem). */
+function renderAll({ scroll = false } = {}) {
+  renderNav();
+  renderSummary();
+  ({ day: renderDay, week: renderWeek, month: renderMonth })[ui.view]();
+  $('#mi-sample').hidden = !data.items.some(i => i.sample);
+  if (scroll && ui.view !== 'month') {
+    let target = null;
+    if (ui.cursor === todayKey() || ui.view === 'week') target = $('.hlabel.now, .wl.now');
+    if (!target && ui.view === 'day') {
+      const first = occurrencesOn(ui.cursor).find(o => o.time);
+      if (first) target = document.querySelector(`.slot[data-time="${pad(hourOf(first.time))}:00"]`);
+    }
+    if (target) target.scrollIntoView({ block: 'center' });
+    else window.scrollTo(0, 0);
+  }
+}
+
+
+/* ==========================================================================
+   5. INTERFAZ: formularios, diálogos y eventos
+   ========================================================================== */
+let toastTimer;
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/** Pregunta con botones personalizados; devuelve el `value` elegido o null si se cancela. */
+function ask({ title, text, buttons }) {
+  return new Promise(resolve => {
+    const dlg = $('#dlg-ask');
+    $('#ask-title').textContent = title;
+    $('#ask-text').textContent = text || '';
+    const box = $('#ask-buttons');
+    box.innerHTML = '';
+    let result = null;
+    buttons.forEach(b => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn ' + (b.variant || '');
+      btn.textContent = b.label;
+      btn.disabled = !!b.disabled;
+      btn.addEventListener('click', () => { result = b.value; dlg.close(); });
+      box.appendChild(btn);
+    });
+    dlg.addEventListener('close', () => resolve(result), { once: true });
+    dlg.showModal();
+  });
+}
+const confirmBox = (title, text, okLabel = 'Aceptar', variant = 'primary') =>
+  ask({ title, text, buttons: [{ label: 'Cancelar', value: null }, { label: okLabel, value: true, variant }] });
+
+/* ---------- Formulario de ítem ---------- */
+const dlgItem = $('#dlg-item');
+let ctx = null;   // { id|null, date, original|null }
+
+function buildFormStatics() {
+  $('#f-days').innerHTML = DAY_LETTERS.map((l, i) =>
+    `<label title="${cap(WEEKDAYS[i])}"><input type="checkbox" value="${i}"><span>${l}</span></label>`).join('');
+  $('#f-cats').innerHTML = CATS.map(c =>
+    `<label style="--c:${c.c}"><input type="radio" name="cat" value="${c.k}"><span>${esc(c.n)}</span></label>`).join('');
+}
+
+const selFreq = () => (document.querySelector('input[name=freq]:checked') || {}).value || 'once';
+
+/** Muestra u oculta campos según la frecuencia elegida. */
+function syncFormFields() {
+  const f = selFreq();
+  const editingRecurring = ctx && ctx.id && ctx.original.freq !== 'once';
+  $('#box-days').hidden = f !== 'weekly';
+  $('#box-dom').hidden = f !== 'monthly';
+  // La fecha se pide al crear, o al editar un ítem de una sola vez. Al editar una serie no (se usa el día tocado).
+  $('#box-date').hidden = editingRecurring;
+  $('#f-date-lbl').textContent = f === 'once' ? 'Fecha' : 'Comienza el';
+}
+
+function openEditor({ id = null, date, time = '' }) {
+  const it = id ? findItem(id) : null;
+  const eff = it ? (it.over[date] ? { ...it, ...it.over[date] } : it) : null;
+  ctx = { id, date, original: it };
+  $('#item-title').textContent = it ? 'Editar' : 'Nuevo';
+  $('#f-err').hidden = true;
+  $('#f-delete').hidden = !it;
+
+  $('#f-name').value = eff ? eff.name : '';
+  $('#f-time').value = eff ? eff.time : time;
+  $('#f-end').value = eff ? eff.end : '';
+  $('#f-date').value = it && it.freq === 'once' ? it.start : date;
+  $('#f-dom').value = it ? it.dom : parseKey(date).getDate();
+  const freq = it ? it.freq : 'once';
+  document.querySelector(`input[name=freq][value=${freq}]`).checked = true;
+  document.querySelectorAll('#f-days input').forEach(c => { c.checked = it ? it.days.includes(+c.value) : +c.value === dow(date); });
+  document.querySelector(`input[name=cat][value="${eff ? eff.cat : ''}"]`).checked = true;
+
+  syncFormFields();
+  dlgItem.showModal();
+  if (!it) $('#f-name').focus();
+}
+
+/** Lee y valida el formulario. Devuelve el objeto o null (mostrando el error). */
+function readForm() {
+  const fail = msg => { const e = $('#f-err'); e.textContent = msg; e.hidden = false; return null; };
+  const name = $('#f-name').value.trim();
+  const time = $('#f-time').value, end = $('#f-end').value;
+  const freq = selFreq();
+  const days = [...document.querySelectorAll('#f-days input:checked')].map(c => +c.value);
+  const dom = parseInt($('#f-dom').value, 10);
+  const editingRecurring = ctx.id && ctx.original.freq !== 'once';
+  const start = editingRecurring ? ctx.date : $('#f-date').value;
+  const cat = (document.querySelector('input[name=cat]:checked') || {}).value || '';
+
+  if (!name) return fail('Escribe un nombre.');
+  if (end && !time) return fail('Para indicar una hora de fin, primero indica la hora de inicio.');
+  if (time && end && toMin(end) <= toMin(time)) return fail('La hora de fin debe ser posterior a la de inicio.');
+  if (freq === 'weekly' && !days.length) return fail('Elige al menos un día de la semana.');
+  if (freq === 'monthly' && !(dom >= 1 && dom <= 31)) return fail('El día del mes debe estar entre 1 y 31.');
+  if (!isKey(start)) return fail('Elige una fecha válida.');
+  return { name, time, end, freq, days, dom: freq === 'monthly' ? dom : parseKey(start).getDate(), start, cat };
+}
+
+const sameDays = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+
+async function submitItem(e) {
+  e.preventDefault();
+  const f = readForm();
+  if (!f) return;
+
+  if (!ctx.id) {                                       // alta
+    createItem(f);
+    toast('Agregado');
+  } else {
+    const it = ctx.original;
+    if (it.freq === 'once') {
+      applyEdit(it.id, ctx.date, f, 'whole');
+    } else {
+      // ¿Cambió la regla de repetición? Entonces "solo este día" no tiene sentido.
+      const ruleChanged = f.freq !== it.freq || (f.freq === 'weekly' && !sameDays(f.days, it.days)) || (f.freq === 'monthly' && f.dom !== it.dom);
+      const scope = await ask({
+        title: 'Aplicar cambios',
+        text: ruleChanged
+          ? 'Cambiaste la frecuencia, así que el cambio se aplicará a este día y a los siguientes.'
+          : `«${it.name}» se repite. ¿A qué días aplican los cambios?`,
+        buttons: [
+          { label: 'Cancelar', value: null },
+          { label: 'Solo este día', value: 'one', disabled: ruleChanged },
+          { label: 'Este y los siguientes', value: 'future', variant: 'primary' },
+        ],
+      });
+      if (!scope) return;
+      applyEdit(it.id, ctx.date, f, scope);
+    }
+    toast('Cambios guardados');
+  }
+  save();
+  dlgItem.close();
+  renderAll();
+}
+
+async function deleteCurrent() {
+  const it = ctx.original;
+  if (!it) return;
+  if (it.freq === 'once') {
+    if (!(await confirmBox('Eliminar', `¿Eliminar «${it.name}»?`, 'Eliminar', 'danger'))) return;
+    applyDelete(it.id, ctx.date, 'whole');
+  } else {
+    const scope = await ask({
+      title: 'Eliminar',
+      text: `«${it.name}» se repite. ¿Qué quieres eliminar?`,
+      buttons: [
+        { label: 'Cancelar', value: null },
+        { label: 'Solo este día', value: 'one' },
+        { label: 'Este y los siguientes', value: 'future', variant: 'danger' },
+      ],
+    });
+    if (!scope) return;
+    applyDelete(it.id, ctx.date, scope);
+  }
+  save();
+  dlgItem.close();
+  renderAll();
+  toast('Eliminado');
+}
+
+/** Fecha y hora por defecto del botón "+". */
+function defaultNewSlot() {
+  const date = ui.view === 'day' ? ui.cursor : todayKey();
+  let time = '';
+  if (date === todayKey()) { const h = Math.min(23, Math.floor(nowMinutes() / 60) + 1); time = `${pad(h)}:00`; }
+  return { date, time: time || '09:00' };
+}
+
+/* ---------- Datos: exportar / importar / borrar ---------- */
+function exportData() {
+  const payload = { app: 'habitos', exportedAt: new Date().toISOString(), ...data };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `habitos-${todayKey()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('Respaldo descargado');
+}
+
+function importFile(file) {
+  const reader = new FileReader();
+  reader.onerror = () => toast('No se pudo leer el archivo.');
+  reader.onload = async () => {
+    let parsed = null;
+    try { parsed = normalizeData(JSON.parse(reader.result)); } catch (e) {}
+    if (!parsed) { toast('El archivo no tiene un formato válido.'); return; }
+    const ok = await confirmBox('Importar datos',
+      `El archivo contiene ${parsed.items.length} ítems. Reemplazará todos los datos actuales. ¿Continuar?`, 'Reemplazar', 'danger');
+    if (!ok) return;
+    data = parsed; save(); renderAll({ scroll: true });
+    toast('Datos importados');
+  };
+  reader.readAsText(file);
+}
+
+async function clearSample() {
+  const n = data.items.filter(i => i.sample).length;
+  if (!(await confirmBox('Borrar datos de ejemplo', `Se eliminarán ${n} ítems de ejemplo (y sus checks). Tus propios ítems no se tocan.`, 'Borrar', 'danger'))) return;
+  data.items.filter(i => i.sample).forEach(i => dropDone(i.id, () => true));
+  data.items = data.items.filter(i => !i.sample);
+  save(); renderAll(); toast('Ejemplos eliminados');
+}
+
+async function clearAll() {
+  if (!(await confirmBox('Borrar todo', 'Se eliminarán TODOS tus hábitos, quehaceres y checks. Esto no se puede deshacer (exporta un respaldo antes si lo dudas).', 'Borrar todo', 'danger'))) return;
+  data = { version: 1, seeded: true, items: [], done: {} };
+  save(); renderAll(); toast('Todo borrado');
+}
+
+/* ---------- Tema ---------- */
+function toggleTheme() {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  storage.set(THEME_KEY, next);
+}
+
+/* ---------- Navegación ---------- */
+function step(dir) {
+  ui.cursor = ui.view === 'day' ? addDays(ui.cursor, dir)
+            : ui.view === 'week' ? addDays(ui.cursor, 7 * dir)
+            : addMonths(ui.cursor, dir);
+  renderAll({ scroll: true });
+}
+
+/* ---------- Menú de datos ---------- */
+function setMenu(open) {
+  $('#menu').hidden = !open;
+  document.querySelector('[data-action=menu]').setAttribute('aria-expanded', String(open));
+}
+
+/* ---------- Eventos (delegación) ---------- */
+document.addEventListener('click', e => {
+  // Cierra el menú al hacer clic fuera.
+  if (!e.target.closest('#menu') && !e.target.closest('[data-action=menu]')) setMenu(false);
+  // Clic en el fondo oscuro de un diálogo = cerrarlo.
+  if (e.target instanceof HTMLDialogElement && e.target.id === 'dlg-item') { e.target.close(); return; }
+
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const { action, id, date, time, view } = el.dataset;
+
+  switch (action) {
+    case 'tab':   ui.view = view; renderAll({ scroll: true }); break;
+    case 'prev':  step(-1); break;
+    case 'next':  step(1); break;
+    case 'today': ui.cursor = todayKey(); renderAll({ scroll: true }); break;
+    case 'goto-day': ui.view = 'day'; ui.cursor = date; renderAll({ scroll: true }); break;
+    case 'toggle': {
+      toggleDone(id, date);
+      renderAll();
+      const again = document.querySelector(`[data-action=toggle][data-id="${id}"][data-date="${date}"]`);
+      if (again) again.focus({ preventScroll: true });
+      break;
+    }
+    case 'edit':   openEditor({ id, date }); break;
+    case 'add-at': openEditor({ date, time }); break;
+    case 'new':    openEditor(defaultNewSlot()); break;
+    case 'theme':  toggleTheme(); break;
+    case 'menu':   setMenu($('#menu').hidden); break;
+    case 'export': setMenu(false); exportData(); break;
+    case 'import': setMenu(false); $('#file-import').click(); break;
+    case 'clear-sample': setMenu(false); clearSample(); break;
+    case 'clear-all':    setMenu(false); clearAll(); break;
+  }
+});
+
+$('#form-item').addEventListener('submit', submitItem);
+$('#f-cancel').addEventListener('click', () => dlgItem.close());
+$('#f-delete').addEventListener('click', deleteCurrent);
+$('#f-notime').addEventListener('click', () => { $('#f-time').value = ''; $('#f-end').value = ''; });
+$('#f-freq').addEventListener('change', () => {
+  syncFormFields();
+  // Valores por defecto razonables al cambiar de frecuencia.
+  const base = $('#f-date').value || ctx.date;
+  if (selFreq() === 'weekly' && !document.querySelector('#f-days input:checked')) {
+    document.querySelector(`#f-days input[value="${dow(base)}"]`).checked = true;
+  }
+  if (selFreq() === 'monthly' && !$('#f-dom').value) $('#f-dom').value = parseKey(base).getDate();
+});
+$('#file-import').addEventListener('change', e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (f) importFile(f);
+});
+
+// Si se edita en otra pestaña, refresca.
+window.addEventListener('storage', e => {
+  if (e.key === STORE_KEY && !document.querySelector('dialog[open]') && loadData()) renderAll();
+});
+
+/* ---------- Arranque ---------- */
+buildFormStatics();
+if (!loadData() && !data.seeded) {
+  seedData();
+  save();
+}
+if (!storage.ok) showStorageBanner();
+renderAll({ scroll: true });
+
+// Cada minuto actualiza la línea de "ahora" (y el cambio de día a medianoche) si no hay un diálogo abierto.
+let lastDay = todayKey();
+setInterval(() => {
+  if (document.querySelector('dialog[open]')) return;
+  if (todayKey() !== lastDay) { if (ui.cursor === lastDay) ui.cursor = todayKey(); lastDay = todayKey(); }
+  renderAll();
+}, 60000);
+</script>
+</body>
+</html>
